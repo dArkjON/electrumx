@@ -238,8 +238,6 @@ create_docker_compose() {
     log_info "Erstelle docker-compose Datei..."
 
     cat > "$COMPOSE_DIR/docker-compose-electrumx-new.yml" <<'EOF'
-version: '3.3'
-
 services:
   electrumx:
     image: electrumx-btx:1.16.0
@@ -278,43 +276,19 @@ services:
       LOG_LEVEL: "info"
       COST_SOFT_LIMIT: "0"
       COST_HARD_LIMIT: "0"
-      REPORT_SERVICES: "tcp://your-domain.com:50001,ssl://your-domain.com:50002"
+      REPORT_SERVICES: "tcp://ele1.bitcore.cc:50001,ssl://ele1.bitcore.cc:50002"
       PEER_DISCOVERY: "on"
       PEER_ANNOUNCE: "true"
-    depends_on:
-      - bitcored
     healthcheck:
       test: ["CMD", "python", "/usr/local/bin/electrumx_rpc", "getinfo"]
       interval: 2m
       timeout: 30s
       retries: 3
 
-  bitcored:
-    image: bitcored
-    container_name: bitcore-rpc
-    command:
-      -externalip=51.15.77.33
-      -whitebind=172.21.0.11:8555
-      -rpcbind=172.21.0.11
-      -maxconnections=64
-      -rpcuser=btx-rpc-user
-      -rpcpassword=btx-rpc-pwd
-    restart: unless-stopped
-    networks:
-      bitcore-net:
-        ipv4_address: 172.21.0.11
-    ports:
-      - "8555:8555"
-    expose:
-      - 8555
-      - 8556
-    volumes:
-      - /home/bitcore:/data
-
 networks:
   bitcore-net:
-    external:
-      name: btx-rpc-docker_bitcore-net
+    name: btx-rpc-docker_bitcore-net
+    external: true
 EOF
 
     log_success "docker-compose Datei erstellt"
