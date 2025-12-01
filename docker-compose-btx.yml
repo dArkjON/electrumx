@@ -1,0 +1,78 @@
+version: '3.3'
+
+services:
+  electrumx:
+    image: electrumx-btx:1.16.0
+    container_name: electrumx-new
+    restart: unless-stopped
+    networks:
+      bitcore-net:
+        ipv4_address: 172.21.0.12
+    ports:
+      - "50001:50001"  # TCP
+      - "50002:50002"  # SSL
+      - "50004:50004"  # WSS
+      - "8000:8000"    # RPC
+    expose:
+      - 50001
+      - 50002
+      - 50004
+      - 8000
+    volumes:
+      - /home/bitcore-new/electrumx-db:/var/lib/electrumx
+      - /home/bitcore/electrumx.crt:/etc/electrumx/ssl/electrumx.crt:ro
+      - /home/bitcore/electrumx.key:/etc/electrumx/ssl/electrumx.key:ro
+    environment:
+      COIN: "Bitcore"
+      NET: "mainnet"
+      DB_DIRECTORY: "/var/lib/electrumx"
+      DB_ENGINE: "leveldb"
+      DAEMON_URL: "http://btx-rpc-user:btx-rpc-pwd@172.21.0.11:8556/"
+      SERVICES: "tcp://:50001,ssl://:50002,wss://:50004,rpc://0.0.0.0:8000"
+      SSL_CERTFILE: "/etc/electrumx/ssl/electrumx.crt"
+      SSL_KEYFILE: "/etc/electrumx/ssl/electrumx.key"
+      ALLOW_ROOT: "true"
+      CACHE_MB: "512"
+      MAX_SEND: "10000000"
+      BANDWIDTH_UNIT_COST: "50000"
+      LOG_LEVEL: "info"
+      COST_SOFT_LIMIT: "0"
+      COST_HARD_LIMIT: "0"
+      REPORT_SERVICES: "tcp://ele1.bitcore.cc:50001,ssl://ele1.bitcore.cc:50002"
+      PEER_DISCOVERY: "on"
+      PEER_ANNOUNCE: "true"
+    depends_on:
+      - bitcored
+    healthcheck:
+      test: ["CMD", "electrumx_rpc", "getinfo"]
+      interval: 2m
+      timeout: 30s
+      retries: 3
+
+  # BTX RPC Service (bereits vorhanden, hier als Referenz)
+  bitcored:
+    image: bitcored
+    container_name: bitcore-rpc
+    command:
+      -externalip=51.15.77.33
+      -whitebind=172.21.0.11:8555
+      -rpcbind=172.21.0.11
+      -maxconnections=64
+      -rpcuser=btx-rpc-user
+      -rpcpassword=btx-rpc-pwd
+    restart: unless-stopped
+    networks:
+      bitcore-net:
+        ipv4_address: 172.21.0.11
+    ports:
+      - "8555:8555"
+    expose:
+      - 8555
+      - 8556
+    volumes:
+      - /home/bitcore:/data
+
+networks:
+  bitcore-net:
+    external:
+      name: btx-rpc-docker_bitcore-net
